@@ -17,7 +17,7 @@ def parse_sc_datetime(sc_datetime):
     dt = datetime.strptime(sc_datetime, '%Y/%m/%d %H:%M:%S %z')
     return dt.replace(tzinfo=timezone.utc).timestamp()
 
-BOT_VERSION = '1.3.3'
+BOT_VERSION = '1.4'
 
 class GroupBot():
     def __init__(self, soundcloud, db, config, banlist):
