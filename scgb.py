@@ -20,12 +20,13 @@ def load_config():
         sys.exit(1)
 
     # Init config defaults to simplify mass configuration
+    # Use "import" to load from program dir
     try:
-        defaults = imp.load_source('scgb_defaults', os.path.join(os.getcwd(), 'defaults.py'))
-    except FileNotFoundError:
-        pass
+        from defaults import defaults
+    except ImportError:
+        return
     else:
-        for key in defaults.defaults.keys():
+        for key in defaults.keys():
             if not hasattr(config, key):
                 setattr(config, key, defaults[key])
 
