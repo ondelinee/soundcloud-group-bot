@@ -24,7 +24,7 @@ def load_config():
     try:
         from defaults import defaults
     except ImportError:
-        return
+        pass
     else:
         for key in defaults.keys():
             if not hasattr(config, key):
