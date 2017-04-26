@@ -2,7 +2,7 @@
 
 from scgb.main import GroupBot
 from scgb.database import Database
-from scgb.client import SoundcloudClient
+from scgb.client import SoundcloudClient, BadCredentialsError
 
 import imp
 import os
