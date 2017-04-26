@@ -28,7 +28,7 @@ def load_config():
         for key in defaults.defaults.keys():
             if not hasattr(config, key):
                 setattr(config, key, defaults[key])
-        
+
     return config
 
 def load_banlist(path):
@@ -41,7 +41,7 @@ def load_banlist(path):
         'track': {},
         'playlist': {},
     }
-        
+
     with open(path, 'r') as file:
         for line in file:
             line = line.strip()
@@ -65,26 +65,26 @@ def load_banlist(path):
                 banlist[what][id] = values[2]
             else:
                 banlist[what][id] = "No reason given."
-                
+
     return banlist
-    
+
 if __name__ == '__main__':
     # Init log
     logging.basicConfig(stream=sys.stdout, level=logging.INFO, datefmt='[%Y-%m-%d %H:%M:%S]', format='%(asctime)s %(levelname)s %(message)s')
     logging.getLogger("requests").setLevel(logging.WARNING)
     logging.getLogger("urllib3").setLevel(logging.WARNING)
-	
-	# Init config
+
+    # Init config
     config = load_config()
     db = Database(config.stats_database)
     banlist = load_banlist(config.banlistfile)
-    
+
     # Init API
     try:
         soundcloud = SoundcloudClient(config.client_id, config.client_secret, config.username, config.password, config.token_cache)
     except BadCredentialsError:
         logging.critical('Incorrect API key, login or password. Please, edit config.py.')
         sys.exit(1)
-                
+
     bot = GroupBot(soundcloud, db, config, banlist)
     bot.check_comments()

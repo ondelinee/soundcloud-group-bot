@@ -16,7 +16,7 @@ def update_stats(link, databasename, filename):
 
     def get(regex):
         return int(re.search(regex, html).group(1))
-        
+
     with open(filename, 'ab') as file:
         if os.stat(filename).st_size == 0:
             file.write('timestamp,followers,posts,tracks,playlists,plays,likes,reposts,users\n')
@@ -25,7 +25,7 @@ def update_stats(link, databasename, filename):
         track_count = db.track_count
         playlist_count = db.playlist_count
         user_count = db.user_count
-        
+
         row = [
             datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S'),
             get('"followers_count":(\d+)'),
@@ -37,14 +37,14 @@ def update_stats(link, databasename, filename):
             get('"reposts_count":(\d+),"secret_token"'),
             user_count,
         ]
-        
+
         print(row)
         file.write(','.join(map(str, row)) + '\n')
-        
+
 if __name__ == '__main__':
     if len(sys.argv) != 4:
         print 'Usage: groupmonitor.py <group track url> <group database> <output>'
         sys.exit(2)
-        
+
     print 'Retrieving:', 
     update_stats(sys.argv[1], sys.argv[2], sys.argv[3])

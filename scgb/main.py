@@ -16,7 +16,7 @@ from datetime import datetime, timezone
 def parse_sc_datetime(sc_datetime):
     dt = datetime.strptime(sc_datetime, '%Y/%m/%d %H:%M:%S %z')
     return dt.replace(tzinfo=timezone.utc).timestamp()
-    
+
 BOT_VERSION = '1.3.3'
 
 class GroupBot():
@@ -26,10 +26,10 @@ class GroupBot():
         self._config = config
         self._banlist = banlist
         self._should_update_description = False
-        
+
         # Get the group's user id
         self._group_user_id = self._soundcloud.get('/me').id
-        
+
         # Get the id of the group track
         try:
             self._group_track_id = self._soundcloud.get('/me/tracks')[self._config.post_track_id].id
@@ -48,12 +48,12 @@ class GroupBot():
         if not comments:
             logging.info('Nothing found...')
             return
-            
+
         # Process each comment and delete it
         for comment in reversed(comments):    
             logging.info('Processing a comment by user %d (%s): %s', comment.user_id, comment.user['username'], comment.body)
             response = None
-            
+
             # Try to process the comment
             try:
                 response = self._process_comment(comment)
@@ -69,11 +69,11 @@ class GroupBot():
             except Exception as e: # Program crash
                 logging.exception('Failed to process comment:')
                 response = 'An error happened while processing your comment. We are investigating.'
-            
+
             # Record last processed comment's date to avoid processing earlier comments
             self._db['last_processed_comment_date'] = parse_sc_datetime(comment.created_at)
             self._db.commit()
-            
+
             # Respond to comment
             if response:
                 try:
@@ -92,10 +92,10 @@ class GroupBot():
 
         if self._config.use_advanced_description and self._should_update_description:
             self._update_description()
-                    
+
     def _get_new_comments(self):
         """Return new comments in the order they were posted in"""
-                
+
         # Get the comment list for the group track
         comments = self._soundcloud.get('/tracks/%d/comments' % self._group_track_id, order='created_at')
 
@@ -107,12 +107,12 @@ class GroupBot():
             if last_processed_comment_date is not None and parse_sc_datetime(comment.created_at) <= last_processed_comment_date:
                 return True
             return False
-       
+
         return [comment for comment in comments if not should_ignore_comment(comment)]
-                    
+
     def _process_comment(self, comment):
         """Process a single comment."""
-        
+
         if not comment.body:
             logging.info('Empty URL detected.')
             return 'Your comment is empty.'
@@ -136,20 +136,20 @@ class GroupBot():
                 return 'Playlists are not allowed in this group.'
         else:
             logging.info('Not found')
-                
+
         if not resource or resource.kind not in ('track', 'playlist'):
             if self._config.allow_playlists:
                 return 'The provided link does not lead to a track or playlist.'
             else:
                 return 'The provided link does not lead to a track.'
-        
+
         resource_type = resource.kind
 
         # Check for ownership
         if not self._config.debug_mode and comment.user_id != resource.user_id:
             logging.info('Not the author of the resource')
             return 'You must be the author of the {} to post it in this group.'.format(resource_type)
-                
+
         # Is the resource banned?
         if resource.id in self._banlist[resource_type]:
             reason = self._banlist[resource_type][resource.id];
@@ -165,24 +165,24 @@ class GroupBot():
                 if resource.genre.lower() not in genres_lowercase:
                     logging.info('Genre not allowed: %s', resource.genre)
                 return 'This genre is not allowed in this group. Allowed genres are: ' + ', '.join(self._config.allowed_genres)
-        
+
             # Disable bumps if needed
             if not self._config.allow_bumps and self._db.has_ever_been_posted(resource_type, resource.id):
                 logging.info('Bumping is disabled and this resource is present in the database.')
                 return 'Bumping is not allowed in this group.'
-        
+
             # Enforce minimum bump interval
             last_reposted = self._db.last_repost_time(resource_type, resource.id)
             if last_reposted is not None and last_reposted > int(time()) - self._config.min_bump_interval:
                 logging.info('This %s was posted %d seconds ago, but minimum bump interval is %d.', resource_type, int(time()) - last_reposted, self._config.min_bump_interval)
                 return 'This {} is posted to the group too frequently. Try again later.'.format(resource_type)
-                
+
             # Enforce max posts
             last_post_count = self._db.user_last_posts_count(comment.user_id, self._config.post_limit_interval)
             if last_post_count >= self._config.post_limit:
                 logging.info('The user has already made %d reposts.', last_post_count)
                 return 'You have already made {} posts.'.format(self._config.post_limit)
-                
+
             # Execute the command
             if is_reposted:
                 logging.info('Bumping:')
@@ -193,7 +193,7 @@ class GroupBot():
                 self._group_repost(comment.user_id, resource_type, resource.id)
                 self._should_update_description = True
                 return 'Reposted!'
-                
+
         elif action == 'delete':
             if is_reposted:
                 self._group_delete(comment.user_id, resource_type, resource.id)
@@ -201,10 +201,10 @@ class GroupBot():
                 return 'Deleted!'
             else:
                 logging.info('Resource already deleted')
-        
+
         else:
             assert False, 'Unknown action: ' + repr(action)
-                
+
     def _resolve_resource(self, url):
         """Return the resource object downloaded from url, or None, if not found."""
         try:
@@ -214,15 +214,15 @@ class GroupBot():
                 return None
             else:
                 raise
-                
+
         return resource
 
     def _check_repost_exists(self, type, id):
         """Return true if the repost exists, according to soundcloud.
-        
+
         Also update the database if a repost is already deleted
         on self._soundcloud, but is not marked as deleted in the db."""
-        
+
         try:
             self._soundcloud.get('/e1/me/{}_reposts/{}'.format(type, id))
             return True
@@ -232,8 +232,8 @@ class GroupBot():
                 return False
             else:
                 raise
-        
-        
+
+
     def _group_repost(self, user_id, resource_type, resource_id):
         """Repost a resource into the group and update the database."""
         logging.info('Reposting %s %d...', resource_type, resource_id)
@@ -250,10 +250,10 @@ class GroupBot():
 
     def _update_description(self):
         """Update group description."""
-        
+
         track_count = self._db.track_count
         playlist_count = self._db.playlist_count
-        
+
         keywords = {
             'last_update': strftime("%Y-%m-%d %H:%M:%S", gmtime()),
             'bot_version': BOT_VERSION,
@@ -262,14 +262,14 @@ class GroupBot():
             'user_count': self._db.user_count,
             'post_count': track_count + playlist_count
         }
-            
+
         desc = self._config.description_template.strip()
         for keyword, value in keywords.items():
             desc = desc.replace(self._config.keyword_tag + keyword + self._config.keyword_tag, str(value))
 
         if self._config.use_advanced_description == 1:
             self._soundcloud.put('/me', **{ 'user[description]': desc })
-            
+
         elif self._config.use_advanced_description == 2:
             original = self._soundcloud.get('/me').description
             if not original:
