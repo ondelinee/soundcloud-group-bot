@@ -8,6 +8,11 @@ import imp
 import os
 import sys
 import logging
+import signal
+
+def signal_timeout_handler(signal, frame):
+    logging.critical('Recieved timeout signal... Exiting.')
+    sys.exit(2)
 
 def load_config():
     # Init config
@@ -70,6 +75,8 @@ def load_banlist(path):
     return banlist
 
 if __name__ == '__main__':
+    # Catch timeout signal
+    signal.signal(signal.SIGUSR1, signal_timeout_handler)
     # Init log
     logging.basicConfig(stream=sys.stdout, level=logging.INFO, datefmt='[%Y-%m-%d %H:%M:%S]', format='%(asctime)s %(levelname)s %(message)s')
     logging.getLogger("requests").setLevel(logging.WARNING)

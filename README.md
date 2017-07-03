@@ -1,6 +1,6 @@
 # SoundCloud Group Bot
 
-![logo](http://postimg.ru/img/2016-09/19/71upsxobvpvfqvrwfb9gixg7y.png)
+![logo](https://raw.githubusercontent.com/Monsterovich/soundcloud-group-bot/master/scgb.png)
 
 # Project branches
 
