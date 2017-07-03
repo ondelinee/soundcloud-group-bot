@@ -44,7 +44,7 @@ class GroupBot():
         """Download all comments and process them."""
 
         # Get new comments
-        comments = self._get_new_comments()
+        comments, all_comments = self._get_new_comments()
         if not comments:
             logging.info('Nothing found...')
             return
@@ -56,7 +56,7 @@ class GroupBot():
 
             # Try to process the comment
             try:
-                response = self._process_comment(comment)
+                response = self._process_comment(comment, all_comments)
             except HTTPError as e:
                 if e.response.status_code == 429:
                     logging.exception('Failed to repost track: too many requests:')
@@ -97,7 +97,7 @@ class GroupBot():
         """Return new comments in the order they were posted in"""
 
         # Get the comment list for the group track
-        comments = self._soundcloud.get('/tracks/%d/comments' % self._group_track_id, order='created_at')
+        comments = all_comments = self._soundcloud.get('/tracks/%d/comments' % self._group_track_id, order='created_at')
 
         # Remove comments made by the group account and already processed comments
         last_processed_comment_date = self._db.get('last_processed_comment_date')
@@ -108,10 +108,15 @@ class GroupBot():
                 return True
             return False
 
-        return [comment for comment in comments if not should_ignore_comment(comment)]
+        return [comment for comment in comments if not should_ignore_comment(comment)], all_comments
 
-    def _process_comment(self, comment):
+    def _process_comment(self, comment, all_comments):
         """Process a single comment."""
+
+        for c in all_comments:
+            if c is not comment and c.timestamp == comment.timestamp:
+                logging.info('Answer ignored.')
+                return None
 
         if not comment.body:
             logging.info('Empty URL detected.')
